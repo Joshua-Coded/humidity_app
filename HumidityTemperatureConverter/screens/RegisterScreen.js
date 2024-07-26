@@ -1,46 +1,55 @@
 import React, { useState } from "react";
 import { useNavigation } from "@react-navigation/native";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { Button, StyleSheet, Text, TextInput, View } from "react-native";
 import { auth } from "../firebaseConfig";
 
-// screens/LoginScreen.js
+// screens/RegisterScreen.js
 
-const LoginScreen = () => {
+const RegisterScreen = () => {
+    const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const navigation = useNavigation();
 
-    const handleLogin = async () => {
+    const handleRegister = async () => {
         setError('');
         try {
-            await signInWithEmailAndPassword(auth, email, password);
-            navigation.replace('AppTabs');
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+            await updateProfile(user, { displayName: name });
+
+            // Navigate to Login screen after registration
+            navigation.replace('Login');
         } catch (e) {
             switch (e.code) {
                 case 'auth/invalid-email':
                     setError('Invalid email address.');
                     break;
-                case 'auth/user-disabled':
-                    setError('User account is disabled.');
+                case 'auth/weak-password':
+                    setError('Password should be at least 6 characters.');
                     break;
-                case 'auth/user-not-found':
-                    setError('User not found.');
-                    break;
-                case 'auth/wrong-password':
-                    setError('Incorrect password.');
+                case 'auth/email-already-in-use':
+                    setError('Email is already in use.');
                     break;
                 default:
-                    setError('Failed to log in. Please try again.');
+                    setError('Failed to register. Please try again.');
             }
         }
     };
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>Login</Text>
+            <Text style={styles.title}>Register</Text>
             {error ? <Text style={styles.error}>{error}</Text> : null}
+            <TextInput
+                style={styles.input}
+                placeholder="Name"
+                value={name}
+                onChangeText={setName}
+                autoCapitalize="none"
+            />
             <TextInput
                 style={styles.input}
                 placeholder="Email"
@@ -57,7 +66,7 @@ const LoginScreen = () => {
                 secureTextEntry
                 autoCapitalize="none"
             />
-            <Button title="Login" onPress={handleLogin} />
+            <Button title="Register" onPress={handleRegister} />
         </View>
     );
 };
@@ -89,4 +98,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default LoginScreen;
+export default RegisterScreen;
